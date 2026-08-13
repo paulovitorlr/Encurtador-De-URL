@@ -547,3 +547,273 @@ implementação definitiva:
 
 Essas questões serão resolvidas durante as próximas etapas de
 modelagem e arquitetura.
+
+# Definições de Endpoints
+
+A API será dividida entre recursos públicos e recursos que exigem autenticação.
+
+Apenas a página inicial e o acesso às ShortURLs serão públicos. As operações de gerenciamento e consulta de analytics exigirão um usuário autenticado.
+
+## Visão geral
+
+### Recursos públicos
+
+- `GET /`
+- `GET /{shortCode}`
+
+### Recursos autenticados
+
+- `POST /api/v1/urls`
+- `GET /api/v1/analytics`
+- `GET /api/v1/analytics/{shortCode}`
+
+---
+
+# Criar uma ShortURL
+
+### Endpoint
+
+`POST /api/v1/urls`
+
+### Objetivo
+
+Criar uma nova ShortURL a partir de uma LongURL fornecida pelo usuário.
+
+### Quem pode chamar?
+
+Somente usuários autenticados.
+
+### O que envia?
+
+Um objeto contendo a LongURL.
+
+Exemplo conceitual:
+
+```json
+{
+  "longUrl": "https://exemplo.com/uma/url/muito/grande"
+}
+```
+
+### O que o sistema faz?
+
+1. Verifica se o usuário está autenticado.
+2. Valida a LongURL recebida.
+3. Gera um ShortCode único.
+4. Define a data de criação.
+5. Define a data de expiração, caso aplicável.
+6. Associa a ShortURL ao usuário que a criou.
+7. Persiste os dados.
+8. Retorna os dados da ShortURL criada.
+
+### O que retorna?
+
+A ShortURL criada e seus dados relevantes.
+
+Exemplo conceitual:
+
+```json
+{
+  "shortUrl": "https://cleanurl.com/s23B",
+  "createdAt": "...",
+  "expiresAt": "..."
+}
+```
+
+### Status de sucesso
+
+`201 Created`
+
+### Possíveis erros
+
+- LongURL inválida → requisição rejeitada.
+- LongURL ausente → requisição rejeitada.
+- Usuário não autenticado → `401 Unauthorized`.
+
+A API informa que a requisição não está autenticada. O frontend poderá utilizar essa resposta para encaminhar o usuário para a tela de login/registro.
+
+---
+
+# Consultar Analytics da Conta
+
+### Endpoint
+
+`GET /api/v1/analytics`
+
+### Objetivo
+
+Retornar uma visão geral dos acessos das ShortURLs pertencentes ao usuário autenticado.
+
+### Quem pode chamar?
+
+Somente usuários autenticados.
+
+### O que envia?
+
+Nenhum dado obrigatório no corpo da requisição.
+
+A identificação do usuário será obtida através do mecanismo de autenticação.
+
+### O que o sistema faz?
+
+1. Verifica se o usuário está autenticado.
+2. Identifica o usuário através da autenticação.
+3. Localiza as ShortURLs pertencentes ao usuário.
+4. Consulta os eventos e métricas relacionados.
+5. Retorna os analytics agregados.
+
+### O que retorna?
+
+Exemplos:
+
+- Quantidade total de cliques.
+- Cliques por período.
+- Horários de maior movimentação.
+- Quantidade de ShortURLs.
+- URLs com maior número de acessos.
+
+### Status de sucesso
+
+`200 OK`
+
+### Possíveis erros
+
+- Usuário não autenticado → `401 Unauthorized`.
+
+Não se aplica validação de LongURL ou ShortCode neste endpoint, pois nenhuma URL específica é informada.
+
+---
+
+# Consultar Analytics de uma ShortURL
+
+### Endpoint
+
+`GET /api/v1/analytics/{shortCode}`
+
+Exemplo:
+
+`GET /api/v1/analytics/s23B`
+
+### Objetivo
+
+Retornar os analytics de uma ShortURL específica.
+
+### Quem pode chamar?
+
+Somente usuários autenticados e autorizados a consultar a ShortURL informada.
+
+### O que envia?
+
+O `shortCode` utilizado para identificar a ShortURL.
+
+### O que o sistema faz?
+
+1. Verifica se o usuário está autenticado.
+2. Identifica a ShortURL através do `shortCode`.
+3. Verifica se a ShortURL pertence ao usuário autenticado.
+4. Consulta os eventos e métricas relacionados.
+5. Retorna os analytics da ShortURL.
+
+### O que retorna?
+
+Exemplos:
+
+- Quantidade de cliques.
+- Cliques por período.
+- Horários de maior movimentação.
+- Histórico de acessos.
+- Data de criação.
+- Data de expiração.
+
+### Status de sucesso
+
+`200 OK`
+
+### Possíveis erros
+
+- Usuário não autenticado → `401 Unauthorized`.
+- ShortCode inexistente → `404 Not Found`.
+- ShortURL existente, mas não pertence ao usuário → acesso negado.
+
+---
+
+# Acessar uma ShortURL
+
+### Endpoint
+
+`GET /{shortCode}`
+
+Exemplo:
+
+`GET /s23B`
+
+### Objetivo
+
+Permitir que qualquer pessoa utilize uma ShortURL e seja redirecionada para a LongURL correspondente.
+
+### Quem pode chamar?
+
+Qualquer pessoa. Não é necessário possuir uma conta no CleanURL.
+
+### O que envia?
+
+O `shortCode` através da própria URL.
+
+Exemplo:
+
+`https://cleanurl.com/s23B`
+
+### O que o sistema faz?
+
+1. Recebe o `shortCode`.
+2. Localiza a ShortURL correspondente.
+3. Verifica se a ShortURL existe.
+4. Verifica se ainda está válida.
+5. Registra o evento de acesso.
+6. Redireciona o cliente para a LongURL.
+
+### O que retorna?
+
+Uma resposta HTTP de redirecionamento contendo a LongURL no cabeçalho `Location`.
+
+```text
+HTTP/1.1 302 Found
+Location: https://exemplo.com/produto/123
+```
+
+### Status de sucesso
+
+`302 Found`
+
+### Possíveis erros
+
+- ShortCode inexistente → `404 Not Found`.
+- ShortURL expirada → requisição rejeitada.
+- ShortURL inválida ou indisponível → requisição rejeitada.
+
+O comportamento exato para URLs expiradas será definido posteriormente.
+
+---
+
+# Resumo dos Endpoints
+
+| Método | Endpoint | Autenticação | Objetivo |
+|---|---|---|---|
+| `GET` | `/` | Não | Página inicial |
+| `POST` | `/api/v1/urls` | Sim | Criar ShortURL |
+| `GET` | `/api/v1/analytics` | Sim | Analytics da conta |
+| `GET` | `/api/v1/analytics/{shortCode}` | Sim | Analytics de uma ShortURL |
+| `GET` | `/{shortCode}` | Não | Redirecionar para LongURL |
+
+## Separação de responsabilidades
+
+Os endpoints autenticados são utilizados para gerenciamento e consulta das URLs do usuário.
+
+O endpoint público `/{shortCode}` permite que qualquer pessoa utilize a ShortURL sem precisar possuir uma conta no CleanURL.
+
+A autenticação identifica **quem é o usuário**.
+
+A autorização determina **se esse usuário possui permissão para acessar determinado recurso**.
+
+O frontend será responsável por apresentar telas de login e pelo tratamento visual dos erros. A API será responsável por autenticar, autorizar, processar as regras de negócio e retornar os respectivos códigos HTTP
+
