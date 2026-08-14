@@ -1,6 +1,9 @@
+import { OriginalUrl } from '../value-objects/original-url.value-object';
+import { ShortCode } from '../value-objects/short-code.value-object';
+
 export interface ShortUrlProps{
     originalUrl: string;
-    shortCode: string;
+    shortCode: ShortCode;
     ownerId: string;
     createdAt: Date;
     expiresAt?: Date;
@@ -17,7 +20,7 @@ export class ShortUrl{
         return this.props.originalUrl;
     }
 
-    get shortCode(): string{
+    get shortCode(): ShortCode{
         return this.props.shortCode;
     }
 
