@@ -2,6 +2,7 @@ import { ShortUrl } from '../../domain/entities/short-url.entity';
 import { ShortUrlRepository } from '../../domain/repositories/short-url.repository';
 import { OriginalUrl } from '../../domain/value-objects/original-url.value-object';
 import { ShortCodeGenerator } from '../ports/short-code-generator';
+import { ShortCode } from '../../domain/value-objects/short-code.value-object';
 
 export interface CreateShortUrlInput {
   originalUrl: string;
@@ -10,6 +11,8 @@ export interface CreateShortUrlInput {
 }
 
 export class CreateShortUrlUseCase {
+  private static readonly MAX_CODE_GENERATION_ATTEMPTS = 5;
+
   constructor(
     private readonly shortUrlRepository: ShortUrlRepository,
     private readonly shortCodeGenerator: ShortCodeGenerator,
@@ -17,7 +20,7 @@ export class CreateShortUrlUseCase {
 
   async execute(input: CreateShortUrlInput): Promise<ShortUrl> {
     const originalUrl = OriginalUrl.create(input.originalUrl);
-    const shortCode = this.shortCodeGenerator.generate();
+    const shortCode = await this.generateUniqueShortCode();
 
     const shortUrl = ShortUrl.create({
       originalUrl,
@@ -29,5 +32,26 @@ export class CreateShortUrlUseCase {
     await this.shortUrlRepository.save(shortUrl);
 
     return shortUrl;
+  }
+
+  private async generateUniqueShortCode(): Promise<ShortCode> {
+    for (
+      let attempt = 0;
+      attempt < CreateShortUrlUseCase.MAX_CODE_GENERATION_ATTEMPTS;
+      attempt++
+    ) {
+      const shortCode = this.shortCodeGenerator.generate();
+
+      const existingShortUrl =
+        await this.shortUrlRepository.findByShortCode(shortCode);
+
+      if (!existingShortUrl) {
+        return shortCode;
+      }
+    }
+
+    throw new Error(
+      'Não foi possível gerar um código curto único.',
+    );
   }
 }
