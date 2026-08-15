@@ -37,11 +37,16 @@ describe('CreateShortUrlUseCase', () => {
     });
 
     expect(result.ownerId).toBe('user-123');
-    expect(result.shortCode).toBe(generatedShortCode);
+    expect(result.shortCode).toBe(generatedShortCode.value);
+    expect(result.originalUrl).toBe(
+        'https://example.com/produtos/123',
+    );
+    expect(result.createdAt).toBeInstanceOf(Date);
+    expect(result.expiresAt).toBeUndefined();
 
     expect(shortCodeGenerator.generate).toHaveBeenCalledTimes(1);
     expect(shortUrlRepository.save).toHaveBeenCalledTimes(1);
-    expect(shortUrlRepository.save).toHaveBeenCalledWith(result);
+
   });
 
   it('should generate another code when the first code already exists', async () => {
@@ -84,13 +89,12 @@ describe('CreateShortUrlUseCase', () => {
     ownerId: 'user-123',
   });
 
-  expect(result.shortCode).toBe(secondCode);
+  expect(result.shortCode).toBe(secondCode.value);
 
   expect(shortCodeGenerator.generate).toHaveBeenCalledTimes(2);
   expect(shortUrlRepository.findByShortCode).toHaveBeenCalledTimes(2);
 
   expect(shortUrlRepository.save).toHaveBeenCalledTimes(1);
-  expect(shortUrlRepository.save).toHaveBeenCalledWith(result);
 });
 
 it('should fail after five short code collisions', async () => {

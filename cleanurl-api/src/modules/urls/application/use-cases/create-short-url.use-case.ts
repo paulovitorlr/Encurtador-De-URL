@@ -10,6 +10,14 @@ export interface CreateShortUrlInput {
   expiresAt?: Date;
 }
 
+export interface CreateShortUrlOutput {
+  originalUrl: string;
+  shortCode: string;
+  ownerId: string;
+  createdAt: Date;
+  expiresAt?: Date;
+}
+
 export class CreateShortUrlUseCase {
   private static readonly MAX_CODE_GENERATION_ATTEMPTS = 5;
 
@@ -18,7 +26,7 @@ export class CreateShortUrlUseCase {
     private readonly shortCodeGenerator: ShortCodeGenerator,
   ) {}
 
-  async execute(input: CreateShortUrlInput): Promise<ShortUrl> {
+  async execute(input: CreateShortUrlInput): Promise<CreateShortUrlOutput> {
     const originalUrl = OriginalUrl.create(input.originalUrl);
     const shortCode = await this.generateUniqueShortCode();
 
@@ -31,7 +39,13 @@ export class CreateShortUrlUseCase {
 
     await this.shortUrlRepository.save(shortUrl);
 
-    return shortUrl;
+    return {
+        originalUrl: shortUrl.originalUrl.value,
+        shortCode: shortUrl.shortCode.value,
+        ownerId: shortUrl.ownerId,
+        createdAt: shortUrl.createdAt,
+        expiresAt: shortUrl.expiresAt,
+    };
   }
 
   private async generateUniqueShortCode(): Promise<ShortCode> {
