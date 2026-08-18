@@ -27,6 +27,6 @@ export class ShortCode {
   }
 
   get value(): string {
-    return this.internalValue;
+     return this.internalValue;
   }
 }

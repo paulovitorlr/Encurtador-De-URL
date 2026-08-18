@@ -5,8 +5,10 @@ import {
   shortUrlRepositoryProvider,
   resolveShortUrlUseCaseProvider
 } from './infrastructure/DI/urls.providers';
+import { UrlsController } from './presentation/http/controllers/urls.controller';
 
 @Module({
+  controllers: [UrlsController],
   providers: [
     shortUrlRepositoryProvider,
     shortCodeGeneratorProvider,

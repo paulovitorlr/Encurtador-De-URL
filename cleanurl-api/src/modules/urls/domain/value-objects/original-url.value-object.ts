@@ -1,3 +1,6 @@
+import { InvalidOriginalUrlError } from '../errors/invalid-original-url.error';
+
+
 export class OriginalUrl{
     private constructor(private readonly internalValue: string){}
 
@@ -5,7 +8,9 @@ export class OriginalUrl{
         const normalizedValue = value.trim();
 
         if (!normalizedValue){
-            throw new Error('A URL original é obrigatória.');
+            throw new InvalidOriginalUrlError(
+                'A URL original é obrigatória.',
+            );
         }
 
         let parsedUrl: URL;
@@ -13,11 +18,11 @@ export class OriginalUrl{
         try{
             parsedUrl = new URL(normalizedValue);
         }catch{
-            throw new Error ('A URL original é inválida.');
+            throw new InvalidOriginalUrlError ('A URL original é inválida.');
         }
 
         if(!['http:', 'https:'].includes(parsedUrl.protocol)){
-            throw new Error('A URL deve utilizar o protocolo HTTP ou HTTPS.');
+            throw new InvalidOriginalUrlError('A URL deve utilizar o protocolo HTTP ou HTTPS.');
         }
 
         return new OriginalUrl(normalizedValue);
