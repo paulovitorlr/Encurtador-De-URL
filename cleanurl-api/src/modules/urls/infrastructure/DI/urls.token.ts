@@ -1,0 +1,3 @@
+export const SHORT_URL_REPOSITORY = Symbol('SHORT_URL_REPOSITORY');
+
+export const SHORT_CODE_GENERATOR = Symbol('SHORT_CODE_GENERATOR');
