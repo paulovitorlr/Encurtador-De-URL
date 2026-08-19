@@ -1,5 +1,6 @@
 import { ShortUrlRepository } from '../../domain/repositories/short-url.repository';
 import { ShortCode } from '../../domain/value-objects/short-code.value-object';
+import { ShortUrlNotFoundError } from '../../domain/errors/short-url-not-found.error';
 
 interface ResolveShortUrlInput {
   shortCode: string;
@@ -21,7 +22,7 @@ export class ResolveShortUrlUseCase {
       await this.shortUrlRepository.findByShortCode(shortCode);
 
     if (!shortUrl) {
-      throw new Error('URL curta não encontrada.');
+      throw new ShortUrlNotFoundError();
     }
 
     return {

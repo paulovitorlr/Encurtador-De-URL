@@ -1,3 +1,5 @@
+import { InvalidShortCodeError } from '../errors/invalid-short-code.error';
+
 export class ShortCode {
   private static readonly CODE_LENGTH = 7;
   private static readonly BASE62_PATTERN = /^[a-zA-Z0-9]+$/;
@@ -8,17 +10,19 @@ export class ShortCode {
     const normalizedValue = value.trim();
 
     if (!normalizedValue) {
-      throw new Error('O código curto é obrigatório.');
+      throw new InvalidShortCodeError(
+        'O código curto é obrigatório.',
+      );
     }
 
     if (normalizedValue.length !== this.CODE_LENGTH) {
-      throw new Error(
+      throw new InvalidShortCodeError(
         `O código curto deve possuir ${this.CODE_LENGTH} caracteres.`,
       );
     }
 
     if (!this.BASE62_PATTERN.test(normalizedValue)) {
-      throw new Error(
+      throw new InvalidShortCodeError(
         'O código curto deve conter somente letras e números.',
       );
     }
@@ -27,6 +31,6 @@ export class ShortCode {
   }
 
   get value(): string {
-     return this.internalValue;
+    return this.internalValue;
   }
 }

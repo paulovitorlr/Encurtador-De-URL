@@ -9,6 +9,7 @@ import {
   jest,
 } from '@jest/globals';
 import request from 'supertest';
+import { ConfigService } from '@nestjs/config';
 
 
 import { InvalidOriginalUrlError } from '../src/modules/urls/domain/errors/invalid-original-url.error';
@@ -22,18 +23,28 @@ describe('UrlsController (e2e)', () => {
     execute: jest.fn<CreateShortUrlUseCase['execute']>(),
   };
 
+ const configServiceMock = {
+  getOrThrow: jest.fn<(key: string) => string>(
+    () => 'http://localhost:3000',
+  ),
+};
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [UrlsController],
       providers: [
-        {
-          provide: CreateShortUrlUseCase,
-          useValue: createShortUrlUseCaseMock,
-        },
-      ],
-    }).compile();
+                  {
+                      provide: CreateShortUrlUseCase,
+                      useValue: createShortUrlUseCaseMock,
+                  },
+                  {
+                      provide: ConfigService,
+                      useValue: configServiceMock,
+                  },
+                ],
+      }).compile();
 
     app = moduleFixture.createNestApplication();
 
@@ -52,38 +63,44 @@ describe('UrlsController (e2e)', () => {
     await app.close();
   });
 
-  it('deve criar uma URL encurtada e retornar 201', async () => {
-    const createdAt = new Date('2026-08-18T12:00:00.000Z');
+ it('deve criar uma URL encurtada e retornar 201', async () => {
+  const createdAt = new Date('2026-08-18T12:00:00.000Z');
 
-    createShortUrlUseCaseMock.execute.mockResolvedValue({
-      shortCode: 'aB3dE7x',
-      originalUrl: 'https://example.com/produtos/123',
-      ownerId: 'temporary-user-id',
-      createdAt,
-      expiresAt: undefined,
-    });
-
-    const response = await request(app.getHttpServer())
-      .post('/api/v1/urls')
-      .send({
-        originalUrl: 'https://example.com/produtos/123',
-      })
-      .expect(201);
-
-    expect(response.body).toEqual({
-      shortCode: 'aB3dE7x',
-      originalUrl: 'https://example.com/produtos/123',
-      createdAt: createdAt.toISOString(),
-      expiresAt: null,
-    });
-
-    expect(createShortUrlUseCaseMock.execute).toHaveBeenCalledWith({
-      originalUrl: 'https://example.com/produtos/123',
-      ownerId: 'temporary-user-id',
-    });
-
-    expect(createShortUrlUseCaseMock.execute).toHaveBeenCalledTimes(1);
+  createShortUrlUseCaseMock.execute.mockResolvedValue({
+    shortCode: 'aB3dE7x',
+    originalUrl: 'https://example.com/produtos/123',
+    ownerId: 'temporary-user-id',
+    createdAt,
+    expiresAt: undefined,
   });
+
+  const response = await request(app.getHttpServer())
+    .post('/api/v1/urls')
+    .send({
+      originalUrl: 'https://example.com/produtos/123',
+    })
+    .expect(201);
+
+  expect(response.body).toEqual({
+    shortCode: 'aB3dE7x',
+    originalUrl: 'https://example.com/produtos/123',
+    shortUrl: 'http://localhost:3000/aB3dE7x',
+    createdAt: createdAt.toISOString(),
+    expiresAt: null,
+  });
+
+  expect(createShortUrlUseCaseMock.execute).toHaveBeenCalledWith({
+    originalUrl: 'https://example.com/produtos/123',
+    ownerId: 'temporary-user-id',
+  });
+
+  expect(createShortUrlUseCaseMock.execute).toHaveBeenCalledTimes(1);
+
+  expect(configServiceMock.getOrThrow).toHaveBeenCalledWith(
+    'SHORT_URL_BASE_URL',
+  );
+});
+
   it('deve retornar 400 quando a URL original não for enviada', async () => {
   const response = await request(app.getHttpServer())
     .post('/api/v1/urls')
@@ -98,6 +115,7 @@ describe('UrlsController (e2e)', () => {
 
   expect(createShortUrlUseCaseMock.execute).not.toHaveBeenCalled();
   });
+
   it('deve retornar 400 quando a URL original não for uma string', async () => {
   const response = await request(app.getHttpServer())
     .post('/api/v1/urls')
@@ -113,7 +131,9 @@ describe('UrlsController (e2e)', () => {
   });
 
   expect(createShortUrlUseCaseMock.execute).not.toHaveBeenCalled();
+  
   });
+
   it('deve retornar 400 quando o cliente enviar ownerId', async () => {
   const response = await request(app.getHttpServer())
     .post('/api/v1/urls')
@@ -131,6 +151,7 @@ describe('UrlsController (e2e)', () => {
 
   expect(createShortUrlUseCaseMock.execute).not.toHaveBeenCalled();
   });
+
   it('deve retornar 400 quando o domínio rejeitar a URL original', async () => {
   createShortUrlUseCaseMock.execute.mockRejectedValue(
     new InvalidOriginalUrlError('A URL original é inválida.'),
@@ -156,6 +177,7 @@ describe('UrlsController (e2e)', () => {
 
   expect(createShortUrlUseCaseMock.execute).toHaveBeenCalledTimes(1);
   });
+
   it('deve retornar 500 quando ocorrer um erro inesperado', async () => {
   createShortUrlUseCaseMock.execute.mockRejectedValue(
     new Error('Falha inesperada'),
