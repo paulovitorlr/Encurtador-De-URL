@@ -1,4 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe, HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   afterEach,
@@ -64,14 +64,17 @@ describe('UrlsController (e2e)', () => {
   });
 
  it('deve criar uma URL encurtada e retornar 201', async () => {
-  const createdAt = new Date('2026-08-18T12:00:00.000Z');
+  const createdAt = new Date('2026-08-20T12:00:00.000Z');
+
+  const expiresAt = new Date(createdAt);
+  expiresAt.setUTCDate(expiresAt.getUTCDate() + 30);
 
   createShortUrlUseCaseMock.execute.mockResolvedValue({
     shortCode: 'aB3dE7x',
     originalUrl: 'https://example.com/produtos/123',
     ownerId: 'temporary-user-id',
     createdAt,
-    expiresAt: undefined,
+    expiresAt,
   });
 
   const response = await request(app.getHttpServer())
@@ -86,7 +89,7 @@ describe('UrlsController (e2e)', () => {
     originalUrl: 'https://example.com/produtos/123',
     shortUrl: 'http://localhost:3000/aB3dE7x',
     createdAt: createdAt.toISOString(),
-    expiresAt: null,
+    expiresAt: expiresAt.toISOString()
   });
 
   expect(createShortUrlUseCaseMock.execute).toHaveBeenCalledWith({
@@ -197,4 +200,16 @@ describe('UrlsController (e2e)', () => {
 
   expect(createShortUrlUseCaseMock.execute).toHaveBeenCalledTimes(1);
   });
+
+  it('should reject expiresAt provided by the client', async () => {
+  await request(app.getHttpServer())
+    .post('/api/v1/urls')
+    .send({
+      originalUrl: 'https://example.com',
+      expiresAt: '2027-01-01T00:00:00.000Z',
+    })
+    .expect(HttpStatus.BAD_REQUEST);
+
+  expect(createShortUrlUseCaseMock.execute).not.toHaveBeenCalled();
+});
 });

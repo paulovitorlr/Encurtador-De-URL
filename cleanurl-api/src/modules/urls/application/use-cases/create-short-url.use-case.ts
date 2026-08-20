@@ -7,7 +7,6 @@ import { ShortCode } from '../../domain/value-objects/short-code.value-object';
 export interface CreateShortUrlInput {
   originalUrl: string;
   ownerId: string;
-  expiresAt?: Date;
 }
 
 export interface CreateShortUrlOutput {
@@ -15,11 +14,12 @@ export interface CreateShortUrlOutput {
   shortCode: string;
   ownerId: string;
   createdAt: Date;
-  expiresAt?: Date;
+  expiresAt: Date;
 }
 
 export class CreateShortUrlUseCase {
   private static readonly MAX_CODE_GENERATION_ATTEMPTS = 5;
+  private static readonly DEFAULT_EXPIRATION_DAYS = 30;
 
   constructor(
     private readonly shortUrlRepository: ShortUrlRepository,
@@ -29,12 +29,19 @@ export class CreateShortUrlUseCase {
   async execute(input: CreateShortUrlInput): Promise<CreateShortUrlOutput> {
     const originalUrl = OriginalUrl.create(input.originalUrl);
     const shortCode = await this.generateUniqueShortCode();
+    const createdAt = new Date();
+    const expiresAt = new Date(createdAt);
+
+    expiresAt.setUTCDate(
+      expiresAt.getUTCDate() +
+      CreateShortUrlUseCase.DEFAULT_EXPIRATION_DAYS,
+    );
 
     const shortUrl = ShortUrl.create({
       originalUrl,
       shortCode,
       ownerId: input.ownerId,
-      expiresAt: input.expiresAt,
+      expiresAt:expiresAt,
     });
 
     await this.shortUrlRepository.save(shortUrl);
@@ -44,7 +51,7 @@ export class CreateShortUrlUseCase {
         shortCode: shortUrl.shortCode.value,
         ownerId: shortUrl.ownerId,
         createdAt: shortUrl.createdAt,
-        expiresAt: shortUrl.expiresAt,
+        expiresAt: expiresAt,
     };
   }
 

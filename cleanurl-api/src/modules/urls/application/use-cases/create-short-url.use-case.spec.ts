@@ -14,11 +14,14 @@ describe('CreateShortUrlUseCase', () => {
       save: jest
         .fn<ShortUrlRepository['save']>()
         .mockResolvedValue(undefined),
+        
 
       findByShortCode: jest
         .fn<ShortUrlRepository['findByShortCode']>()
         .mockResolvedValue(null),
     };
+
+    
 
     const shortCodeGenerator: ShortCodeGenerator = {
       generate: jest
@@ -42,10 +45,23 @@ describe('CreateShortUrlUseCase', () => {
         'https://example.com/produtos/123',
     );
     expect(result.createdAt).toBeInstanceOf(Date);
-    expect(result.expiresAt).toBeUndefined();
+    expect(result.expiresAt).toBeInstanceOf(Date);
+
+      const expirationInDays =
+          (result.expiresAt.getTime() - result.createdAt.getTime()) /
+          (1000 * 60 * 60 * 24);
+
+      expect(expirationInDays).toBe(30);
 
     expect(shortCodeGenerator.generate).toHaveBeenCalledTimes(1);
     expect(shortUrlRepository.save).toHaveBeenCalledTimes(1);
+
+    expect(shortUrlRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        createdAt: result.createdAt,
+        expiresAt: result.expiresAt,
+      }),
+);
 
   });
 
