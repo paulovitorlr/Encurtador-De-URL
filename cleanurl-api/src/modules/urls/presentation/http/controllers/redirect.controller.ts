@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Controller,
   Get,
+  GoneException,
   HttpStatus,
   NotFoundException,
   Param,
@@ -9,7 +10,7 @@ import {
 } from '@nestjs/common';
 
 import { InvalidShortCodeError } from '../../../domain/errors/invalid-short-code.error';
-
+import { ShortUrlExpiredError } from '../../../domain/errors/short-url-expired.error';
 
 import { ResolveShortUrlUseCase } from '../../../application/use-cases/resolve-short-url.use-case';
 import { ShortUrlNotFoundError } from '../../../domain/errors/short-url-not-found.error';
@@ -26,23 +27,27 @@ async redirect(
   @Param('shortCode') shortCode: string,
 ): Promise<{ url: string }> {
   try {
-    const result = await this.resolveShortUrlUseCase.execute({
-      shortCode,
-    });
+  const result = await this.resolveShortUrlUseCase.execute({
+    shortCode,
+  });
 
-    return {
-      url: result.originalUrl,
-    };
-  } catch (error: unknown) {
-    if (error instanceof InvalidShortCodeError) {
-      throw new BadRequestException(error.message);
-    }
-
-    if (error instanceof ShortUrlNotFoundError) {
-      throw new NotFoundException(error.message);
-    }
-
-    throw error;
+  return {
+    url: result.originalUrl,
+  };
+} catch (error: unknown) {
+  if (error instanceof InvalidShortCodeError) {
+    throw new BadRequestException(error.message);
   }
+
+  if (error instanceof ShortUrlNotFoundError) {
+    throw new NotFoundException(error.message);
+  }
+
+  if (error instanceof ShortUrlExpiredError) {
+    throw new GoneException(error.message);
+  }
+
+  throw error;
+}
 }
 }

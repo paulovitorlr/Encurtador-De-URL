@@ -108,4 +108,46 @@ describe('ShortUrl', () => {
 
     expect(shortUrl.isExpired(expirationDate)).toBe(true);
   });
+
+  it('should identify an expired short URL', () => {
+  const shortUrl = ShortUrl.create({
+    originalUrl,
+    shortCode,
+    ownerId: 'user-123',
+    createdAt: new Date('2026-08-20T10:00:00.000Z'),
+    expiresAt: new Date('2026-08-20T11:00:00.000Z'),
+  });
+
+  const isExpired = shortUrl.isExpired(
+    new Date('2026-08-20T12:00:00.000Z'),
+  );
+
+  expect(isExpired).toBe(true);
+});
+
+it('should identify a short URL that has not expired', () => {
+  const shortUrl = ShortUrl.create({
+    originalUrl,
+    shortCode,
+    ownerId: 'user-123',
+    createdAt: new Date('2026-08-20T10:00:00.000Z'),
+    expiresAt: new Date('2026-08-20T13:00:00.000Z'),
+  });
+
+  const isExpired = shortUrl.isExpired(
+    new Date('2026-08-20T12:00:00.000Z'),
+  );
+
+  expect(isExpired).toBe(false);
+  });
+
+  it('should identify a short URL without expiration as active', () => {
+  const shortUrl = ShortUrl.create({
+    originalUrl,
+    shortCode,
+    ownerId: 'user-123',
+  });
+
+  expect(shortUrl.isExpired(new Date())).toBe(false);
+  });
 });

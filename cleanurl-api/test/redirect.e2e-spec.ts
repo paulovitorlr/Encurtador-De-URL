@@ -13,7 +13,8 @@ import request from 'supertest';
 import { ShortUrlNotFoundError } from '../src/modules/urls/domain/errors/short-url-not-found.error';
 import { ResolveShortUrlUseCase } from '../src/modules/urls/application/use-cases/resolve-short-url.use-case';
 import { RedirectController } from '../src/modules/urls/presentation/http/controllers/redirect.controller';
-import { InvalidShortCodeError } from '../src/modules/urls/domain/errors/invalid-short-code.error';
+import { InvalidShortCodeError } from '../src/modules/urls/domain/errors/invalid-short-code.error'
+import { ShortUrlExpiredError } from '../src/modules/urls/domain/errors/short-url-expired.error';
 
 describe('RedirectController (e2e)', () => {
   let app: INestApplication;
@@ -122,6 +123,28 @@ it('deve retornar 500 quando ocorrer um erro inesperado', async () => {
   expect(response.body).toEqual({
     statusCode: 500,
     message: 'Internal server error',
+  });
+
+  expect(resolveShortUrlUseCaseMock.execute).toHaveBeenCalledWith({
+    shortCode: 'aB3dE7x',
+  });
+
+  expect(resolveShortUrlUseCaseMock.execute).toHaveBeenCalledTimes(1);
+});
+
+it('deve retornar 410 quando a URL curta estiver expirada', async () => {
+  resolveShortUrlUseCaseMock.execute.mockRejectedValue(
+    new ShortUrlExpiredError(),
+  );
+
+  const response = await request(app.getHttpServer())
+    .get('/aB3dE7x')
+    .expect(410);
+
+  expect(response.body).toEqual({
+    message: 'A URL curta está expirada.',
+    error: 'Gone',
+    statusCode: 410,
   });
 
   expect(resolveShortUrlUseCaseMock.execute).toHaveBeenCalledWith({
