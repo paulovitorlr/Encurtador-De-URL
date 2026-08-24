@@ -6,7 +6,7 @@ import { CreateShortUrlUseCase } from '../../application/use-cases/create-short-
 import { ShortCodeGenerator } from '../../application/ports/short-code-generator';
 import { ShortUrlRepository } from '../../domain/repositories/short-url.repository';
 
-import { InMemoryShortUrlRepository } from '../repositories/in-memory-short-url.repository';
+import { DynamoDbShortUrlRepository } from '../database/dynamodb/dynamodb-short-url.repository';
 import { RandomShortCodeGenerator } from '../generators/random-short-code.generator';
 import {
   SHORT_CODE_GENERATOR,
@@ -15,7 +15,7 @@ import {
 
 export const shortUrlRepositoryProvider: Provider = {
   provide: SHORT_URL_REPOSITORY,
-  useClass: InMemoryShortUrlRepository,
+  useClass: DynamoDbShortUrlRepository,
 };
 
 export const shortCodeGeneratorProvider: Provider = {
