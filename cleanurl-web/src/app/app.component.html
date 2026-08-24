@@ -1,0 +1,51 @@
+<main class="page">
+  <div class="card">
+    <header class="header">
+      <h1>CleanURL</h1>
+      <p>Encurtador de URLs simples e rápido</p>
+    </header>
+
+    <form class="form" (ngSubmit)="onSubmit()" novalidate>
+      <label for="originalUrl">Cole sua URL longa</label>
+      <div class="input-row">
+        <input
+          id="originalUrl"
+          name="originalUrl"
+          type="text"
+          placeholder="https://exemplo.com/uma/url/bem/longa"
+          [(ngModel)]="originalUrl"
+          [disabled]="loading()"
+          autocomplete="off"
+        />
+        <button type="submit" [disabled]="loading()">
+          {{ loading() ? 'Encurtando...' : 'Encurtar' }}
+        </button>
+      </div>
+    </form>
+
+    @if (errorMessage()) {
+      <p class="error">{{ errorMessage() }}</p>
+    }
+
+    @if (result()) {
+      <div class="result">
+        <span class="result-label">Sua URL encurtada:</span>
+
+        <div class="result-row">
+          <a [href]="result()!.shortUrl" target="_blank" rel="noopener noreferrer">
+            {{ result()!.shortUrl }}
+          </a>
+          <button type="button" class="copy-btn" (click)="copyToClipboard()">
+            {{ copied() ? 'Copiado!' : 'Copiar' }}
+          </button>
+        </div>
+
+        <p class="original">Original: {{ result()!.originalUrl }}</p>
+
+        <button type="button" class="link-btn" (click)="reset()">
+          Encurtar outra URL
+        </button>
+      </div>
+    }
+  </div>
+</main>
